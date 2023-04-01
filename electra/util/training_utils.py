@@ -75,12 +75,11 @@ class ETAHook(tf.estimator.SessionRunHook):
     time_per_step = time_elapsed / (
         (step - self._start_step) if self._is_training else step)
     msg += ", SPS: {:.1f}".format(1 / time_per_step)
-    msg += ", ELAP: " + secs_to_str(time_elapsed)
-    msg += ", ETA: " + secs_to_str(
-        (self._n_steps - step) * time_per_step)
+    msg += f", ELAP: {secs_to_str(time_elapsed)}"
+    msg += f", ETA: {secs_to_str((self._n_steps - step) * time_per_step)}"
     if run_values is not None:
       for tag, value in run_values.results.items():
-        msg += " - " + str(tag) + (": {:.4f}".format(value))
+        msg += f" - {str(tag)}" + (": {:.4f}".format(value))
     utils.log(msg)
 
 

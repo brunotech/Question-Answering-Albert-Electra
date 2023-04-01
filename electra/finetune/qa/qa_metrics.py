@@ -81,10 +81,9 @@ class SpanBasedQAScorer(scorer.Scorer):
 
     def write_predictions(self):
         """Write final predictions to the json file."""
-        unique_id_to_result = {}
-        for result in self._all_results:
-            unique_id_to_result[result.unique_id] = result
-
+        unique_id_to_result = {
+            result.unique_id: result for result in self._all_results
+        }
         _PrelimPrediction = collections.namedtuple(  # pylint: disable=invalid-name
             "PrelimPrediction",
             ["feature_index", "start_index", "end_index", "start_logit",
@@ -102,8 +101,8 @@ class SpanBasedQAScorer(scorer.Scorer):
             prelim_predictions = []
             # keep track of the minimum score of null start+end of position 0
             score_null = 1000000  # large and positive
-            for (feature_index, feature) in enumerate(features):
-                result = unique_id_to_result[feature[self._name + "_eid"]]
+            for feature_index, feature in enumerate(features):
+                result = unique_id_to_result[feature[f"{self._name}_eid"]]
                 if self._config.joint_prediction:
                     start_indexes = result.start_top_index
                     end_indexes = result.end_top_index
@@ -126,18 +125,25 @@ class SpanBasedQAScorer(scorer.Scorer):
                         # We could hypothetically create invalid predictions, e.g., predict
                         # that the start of the span is in the question. We throw out all
                         # invalid predictions.
-                        if start_index >= len(feature[self._name + "_tokens"]):
+                        if start_index >= len(feature[f"{self._name}_tokens"]):
                             continue
-                        if end_index >= len(feature[self._name + "_tokens"]):
+                        if end_index >= len(feature[f"{self._name}_tokens"]):
                             continue
                         if start_index == 0:
                             continue
-                        if start_index not in feature[self._name + "_token_to_orig_map"]:
+                        if (
+                            start_index
+                            not in feature[f"{self._name}_token_to_orig_map"]
+                        ):
                             continue
-                        if end_index not in feature[self._name + "_token_to_orig_map"]:
+                        if (
+                            end_index
+                            not in feature[f"{self._name}_token_to_orig_map"]
+                        ):
                             continue
-                        if not feature[self._name + "_token_is_max_context"].get(
-                                start_index, False):
+                        if not feature[f"{self._name}_token_is_max_context"].get(
+                            start_index, False
+                        ):
                             continue
                         if end_index < start_index:
                             continue
@@ -158,15 +164,14 @@ class SpanBasedQAScorer(scorer.Scorer):
                                 start_logit=start_logit,
                                 end_logit=end_logit))
 
-            if self._v2:
-                if len(prelim_predictions) == 0 and self._config.debug:
-                    tokid = sorted(feature[self._name + "_token_to_orig_map"].keys())[0]
-                    prelim_predictions.append(_PrelimPrediction(
-                        feature_index=0,
-                        start_index=tokid,
-                        end_index=tokid + 1,
-                        start_logit=1.0,
-                        end_logit=1.0))
+            if self._v2 and not prelim_predictions and self._config.debug:
+                tokid = sorted(feature[f"{self._name}_token_to_orig_map"].keys())[0]
+                prelim_predictions.append(_PrelimPrediction(
+                    feature_index=0,
+                    start_index=tokid,
+                    end_index=tokid + 1,
+                    start_logit=1.0,
+                    end_logit=1.0))
             prelim_predictions = sorted(
                 prelim_predictions,
                 key=lambda x: (x.start_logit + x.end_logit),
@@ -181,12 +186,11 @@ class SpanBasedQAScorer(scorer.Scorer):
                 if len(nbest) >= self._config.n_best_size:
                     break
                 feature = features[pred.feature_index]
-                tok_tokens = feature[self._name + "_tokens"][
-                    pred.start_index:(pred.end_index + 1)]
-                orig_doc_start = feature[
-                    self._name + "_token_to_orig_map"][pred.start_index]
-                orig_doc_end = feature[
-                    self._name + "_token_to_orig_map"][pred.end_index]
+                tok_tokens = feature[f"{self._name}_tokens"][
+                    pred.start_index : (pred.end_index + 1)
+                ]
+                orig_doc_start = feature[f"{self._name}_token_to_orig_map"][pred.start_index]
+                orig_doc_end = feature[f"{self._name}_token_to_orig_map"][pred.end_index]
                 orig_tokens = example.doc_tokens[orig_doc_start:(orig_doc_end + 1)]
                 tok_text = " ".join(tok_tokens)
 
@@ -218,15 +222,14 @@ class SpanBasedQAScorer(scorer.Scorer):
                 nbest.append(
                     _NbestPrediction(text="empty", start_logit=0.0, end_logit=0.0))
 
-            assert len(nbest) >= 1
+            assert nbest
 
             total_scores = []
             best_non_null_entry = None
             for entry in nbest:
                 total_scores.append(entry.start_logit + entry.end_logit)
-                if not best_non_null_entry:
-                    if entry.text:
-                        best_non_null_entry = entry
+                if not best_non_null_entry and entry.text:
+                    best_non_null_entry = entry
 
             probs = _compute_softmax(total_scores)
 
@@ -239,7 +242,7 @@ class SpanBasedQAScorer(scorer.Scorer):
                 output["end_logit"] = entry.end_logit
                 nbest_json.append(dict(output))
 
-            assert len(nbest_json) >= 1
+            assert nbest_json
 
             if not self._v2:
                 all_predictions[example_id] = nbest_json[0]["text"]
@@ -295,10 +298,7 @@ def _compute_softmax(scores):
         exp_scores.append(x)
         total_sum += x
 
-    probs = []
-    for score in exp_scores:
-        probs.append(score / total_sum)
-    return probs
+    return [score / total_sum for score in exp_scores]
 
 
 def get_final_text(config: electra.configure_finetuning.FinetuningConfig, pred_text,
@@ -352,8 +352,7 @@ def get_final_text(config: electra.configure_finetuning.FinetuningConfig, pred_t
     start_position = tok_text.find(pred_text)
     if start_position == -1:
         if config.debug:
-            utils.log(
-                "Unable to find text: '%s' in '%s'" % (pred_text, orig_text))
+            utils.log(f"Unable to find text: '{pred_text}' in '{orig_text}'")
         return orig_text
     end_position = start_position + len(pred_text) - 1
 

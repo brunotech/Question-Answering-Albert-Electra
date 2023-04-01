@@ -35,20 +35,20 @@ def get_similarity(query, documents):
     bm25_scores = bm25.get_scores(query)
     bm25plus_scores = bm25plus.get_scores(query)
     bm25L_scores = bm25L.get_scores(query)
-    
-    bm25_scores = [(i, v) for i, v in enumerate(bm25_scores)]
-    bm25plus_scores = [(i, v) for i, v in enumerate(bm25plus_scores)]
-    bm25L_scores = [(i, v) for i, v in enumerate(bm25L_scores)]
-    
+
+    bm25_scores = list(enumerate(bm25_scores))
+    bm25plus_scores = list(enumerate(bm25plus_scores))
+    bm25L_scores = list(enumerate(bm25L_scores))
+
     bm25_scores.sort(key=lambda x: x[1], reverse=True)
     bm25plus_scores.sort(key=lambda x: x[1], reverse=True)
     bm25L_scores.sort(key=lambda x: x[1], reverse=True)
-    
+
     # print(bm25_scores)
     # print(bm25plus_scores)
     # print(bm25L_scores)
     # print(bm25_scores)
     # print(bm25plus_scores)
     # print(bm25L_scores)
-    
+
     return bm25_scores, bm25plus_scores, bm25L_scores

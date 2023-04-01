@@ -44,9 +44,7 @@ class FinetuningConfig(object):
         # override the default transformer hparams for the provided model size; see
         # modeling.BertConfig for the possible hparams and util.training_utils for
         # the defaults
-        self.model_hparam_overrides = (
-            kwargs["model_hparam_overrides"]
-            if "model_hparam_overrides" in kwargs else {})
+        self.model_hparam_overrides = kwargs.get("model_hparam_overrides", {})
         self.embedding_size = None  # bert hidden size by default
         self.vocab_size = 30522  # number of tokens in the vocabulary
         self.do_lower_case = True
@@ -105,17 +103,15 @@ class FinetuningConfig(object):
         pretrained_model_dir = os.path.join(data_dir, "model")
         self.raw_data_dir = os.path.join(data_dir, "data")
         self.vocab_file = os.path.join(pretrained_model_dir, "vocab.txt")
-        task_names_str = ",".join(
-            kwargs["task_names"] if "task_names" in kwargs else self.task_names)
+        task_names_str = ",".join(kwargs.get("task_names", self.task_names))
         self.init_checkpoint = None if self.debug else pretrained_model_dir
-        self.model_dir = os.path.join(pretrained_model_dir, "finetuning_models",
-                                      task_names_str + "_model")
+        self.model_dir = os.path.join(
+            pretrained_model_dir, "finetuning_models", f"{task_names_str}_model"
+        )
         results_dir = os.path.join(pretrained_model_dir, "results")
-        self.results_txt = os.path.join(results_dir,
-                                        task_names_str + "_results.txt")
-        self.results_pkl = os.path.join(results_dir,
-                                        task_names_str + "_results.pkl")
-        qa_topdir = os.path.join(results_dir, task_names_str + "_qa")
+        self.results_txt = os.path.join(results_dir, f"{task_names_str}_results.txt")
+        self.results_pkl = os.path.join(results_dir, f"{task_names_str}_results.pkl")
+        qa_topdir = os.path.join(results_dir, f"{task_names_str}_qa")
         self.qa_eval_file = os.path.join(qa_topdir, "{:}_eval.json").format
         self.qa_preds_file = os.path.join(qa_topdir, "{:}_preds.json").format
         self.qa_na_file = os.path.join(qa_topdir, "{:}_null_odds.json").format
@@ -131,7 +127,7 @@ class FinetuningConfig(object):
         # default hyperparameters for single-task models
         if len(self.task_names) == 1:
             task_name = self.task_names[0]
-            if task_name == "rte" or task_name == "sts":
+            if task_name in ["rte", "sts"]:
                 self.num_train_epochs = 10.0
             elif "squad" in task_name or "qa" in task_name:
                 self.max_seq_length = 512
@@ -166,5 +162,5 @@ class FinetuningConfig(object):
     def update(self, kwargs):
         for k, v in kwargs.items():
             if k not in self.__dict__:
-                raise ValueError("Unknown hparam " + k)
+                raise ValueError(f"Unknown hparam {k}")
             self.__dict__[k] = v

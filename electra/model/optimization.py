@@ -113,17 +113,19 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
             param_name = self._get_variable_name(param.name)
 
             m = tf.get_variable(
-                name=param_name + "/adam_m",
+                name=f"{param_name}/adam_m",
                 shape=param.shape.as_list(),
                 dtype=tf.float32,
                 trainable=False,
-                initializer=tf.zeros_initializer())
+                initializer=tf.zeros_initializer(),
+            )
             v = tf.get_variable(
-                name=param_name + "/adam_v",
+                name=f"{param_name}/adam_v",
                 shape=param.shape.as_list(),
                 dtype=tf.float32,
                 trainable=False,
-                initializer=tf.zeros_initializer())
+                initializer=tf.zeros_initializer(),
+            )
 
             # Standard Adam update.
             next_m = (tf.multiply(self.beta_1, m) + tf.multiply(1.0 - self.beta_1, grad))
@@ -137,9 +139,10 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
             # Instead we want ot decay the weights in a manner that doesn't interact
             # with the m/v parameters. This is equivalent to adding the square
             # of the weights to the loss with plain (non-momentum) SGD.
-            if self.weight_decay_rate > 0:
-                if self._do_use_weight_decay(param_name):
-                    update += self.weight_decay_rate * param
+            if self.weight_decay_rate > 0 and self._do_use_weight_decay(
+                param_name
+            ):
+                update += self.weight_decay_rate * param
 
             update_with_lr = learning_rate * update
             next_param = param - update_with_lr
@@ -186,7 +189,7 @@ class AdamWeightDecayOptimizer(tf.train.Optimizer):
         """Get the variable name from the tensor name."""
         m = re.match("^(.*):\\d+$", param_name)
         if m is not None:
-            param_name = m.group(1)
+            param_name = m[1]
         return param_name
 
 
@@ -198,7 +201,7 @@ def _get_layer_lrs(learning_rate, layer_decay, n_layers):
         "task_specific/": n_layers + 2,
     })
     for layer in range(n_layers):
-        key_to_depths["encoder/layer_" + str(layer) + "/"] = layer + 1
+        key_to_depths[f"encoder/layer_{str(layer)}/"] = layer + 1
     return {
         key: learning_rate * (layer_decay ** (n_layers + 2 - depth))
         for key, depth in key_to_depths.items()

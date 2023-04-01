@@ -65,15 +65,12 @@ class QAExample(task.Example):
 
     def __repr__(self):
         s = ""
-        s += "qas_id: %s" % (tokenization.printable_text(self.qas_id))
-        s += ", question_text: %s" % (
-            tokenization.printable_text(self.question_text))
-        s += ", doc_tokens: [%s]" % (" ".join(self.doc_tokens))
+        s += f"qas_id: {tokenization.printable_text(self.qas_id)}"
+        s += f", question_text: {tokenization.printable_text(self.question_text)}"
+        s += f', doc_tokens: [{" ".join(self.doc_tokens)}]'
         if self.start_position:
             s += ", start_position: %d" % self.start_position
-        if self.start_position:
             s += ", end_position: %d" % self.end_position
-        if self.start_position:
             s += ", is_impossible: %r" % self.is_impossible
         return s
 
@@ -223,7 +220,7 @@ class QATask(task.Task):
                         tokenization.whitespace_tokenize(orig_answer_text))
                     actual_text = actual_text.lower()
                     cleaned_answer_text = cleaned_answer_text.lower()
-                    if actual_text.find(cleaned_answer_text) == -1:
+                    if cleaned_answer_text not in actual_text:
                         utils.log("Could not find answer: '{:}' in doc vs. "
                                   "'{:}' in provided answer".format(
                                       tokenization.printable_text(actual_text),
@@ -252,10 +249,10 @@ class QATask(task.Task):
 
     def get_feature_specs(self):
         return [
-            feature_spec.FeatureSpec(self.name + "_eid", []),
-            feature_spec.FeatureSpec(self.name + "_start_positions", []),
-            feature_spec.FeatureSpec(self.name + "_end_positions", []),
-            feature_spec.FeatureSpec(self.name + "_is_impossible", []),
+            feature_spec.FeatureSpec(f"{self.name}_eid", []),
+            feature_spec.FeatureSpec(f"{self.name}_start_positions", []),
+            feature_spec.FeatureSpec(f"{self.name}_end_positions", []),
+            feature_spec.FeatureSpec(f"{self.name}_is_impossible", []),
         ]
 
     def featurize(self, example: QAExample, is_training, log=False,

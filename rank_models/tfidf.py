@@ -37,9 +37,6 @@ def get_similarity(query, documents):
     # print(docs)
     doc_vector = vectorizer.fit_transform(docs)
     cosine_similarities = cosine_similarity(doc_vector, doc_vector)[0]
-    # print(cosine_similarities[1:])
-    r = []
-    for i, v in enumerate(cosine_similarities[1:]):
-        r.append(tuple([i, v]))
+    r = list(enumerate(cosine_similarities[1:]))
     r.sort(key=lambda x: x[1], reverse=True)
     return r

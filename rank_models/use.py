@@ -77,9 +77,7 @@ def cosine(A, B):
 def get_similarity(query, documents):
     q = encode(query)
     doc = encode(documents)
-    res = []
-    for i, v in enumerate(doc):
-        res.append(tuple([i, cosine(q, v.reshape(1, -1))[0][0]]))
+    res = [(i, cosine(q, v.reshape(1, -1))[0][0]) for i, v in enumerate(doc)]
     res.sort(key=lambda x: x[1], reverse=True)
 
     return res

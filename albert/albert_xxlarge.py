@@ -14,4 +14,4 @@ def answer(question, text):
     all_tokens = tokenizer.convert_ids_to_tokens(input_ids[0])
     answer = ''.join(all_tokens[start: end + 1]).replace('▁', ' ').strip()
     answer = answer.replace('[SEP]', '')
-    return answer if answer != '[CLS]' and len(answer) != 0 else 'could not find an answer'
+    return answer if answer not in ['[CLS]', ""] else 'could not find an answer'

@@ -60,11 +60,11 @@ class Preprocessor(object):
     def _serialize_dataset(self, tasks, is_training, split):
         """Write out the dataset as tfrecords."""
         dataset_name = "_".join(sorted([task.name for task in tasks]))
-        dataset_name += "_" + split
+        dataset_name += f"_{split}"
         dataset_prefix = os.path.join(
             self._config.preprocessed_data_dir, 'tfrecord')
-        tfrecords_path = dataset_prefix + ".tfrecord"
-        metadata_path = dataset_prefix + ".metadata"
+        tfrecords_path = f"{dataset_prefix}.tfrecord"
+        metadata_path = f"{dataset_prefix}.metadata"
         batch_size = (self._config.train_batch_size if is_training else
                       self._config.eval_batch_size)
 
@@ -129,9 +129,9 @@ class Preprocessor(object):
                 values = kwargs[spec.name]
             else:
                 values = spec.get_default_values()
-            if (isinstance(values, int) or isinstance(values, bool) or
-                isinstance(values, float) or isinstance(values, np.float32) or
-                    (isinstance(values, np.ndarray) and values.size == 1)):
+            if isinstance(values, (int, bool, float, np.float32)) or (
+                isinstance(values, np.ndarray) and values.size == 1
+            ):
                 values = [values]
             if spec.is_int_feature:
                 feature = tf.train.Feature(int64_list=tf.train.Int64List(

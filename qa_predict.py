@@ -24,7 +24,7 @@ session_config = tf.ConfigProto()
 session_config.gpu_options.allow_growth = True
 
 DATA_MODEL_DIR = '/Users/renato/Documents/deep_learning/TensorFlow/electra_large_qa_model/'
-INIT_CHECKPOINT = DATA_MODEL_DIR + 'model/model.ckpt-64000'
+INIT_CHECKPOINT = f'{DATA_MODEL_DIR}model/model.ckpt-64000'
 
 class FinetuningModel(object):
     """Finetuning model with support for multi-task training."""
@@ -55,7 +55,7 @@ class FinetuningModel(object):
         self.outputs = {"task_id": features["task_id"]}
         losses = []
         for task in tasks:
-            with tf.variable_scope("task_specific/" + task.name):
+            with tf.variable_scope(f"task_specific/{task.name}"):
                 task_losses, task_outputs = task.get_prediction_module(
                     bert_model, features, is_training, percent_done)
                 losses.append(task_losses)
@@ -173,17 +173,16 @@ class ModelRunner(object):
 
 
 def init_model():
-    data_dir = DATA_MODEL_DIR + 'data'
+    data_dir = f'{DATA_MODEL_DIR}data'
     if not os.path.exists(data_dir):
         os.mkdir(data_dir)
 
-    hparams = dict()
+    hparams = {}
     config = electra.configure_finetuning.FinetuningConfig('electra_large', DATA_MODEL_DIR, **hparams)
     tasks = task_builder.get_tasks(config)
 
     pretraining_config = {'checkpoint': INIT_CHECKPOINT}
-    model_runner = ModelRunner(config, tasks, pretraining_config=pretraining_config)
-    return model_runner
+    return ModelRunner(config, tasks, pretraining_config=pretraining_config)
 
 def predict(question, context, model):
     model._tasks[0]._examples = {}
@@ -193,8 +192,11 @@ def predict(question, context, model):
             {
                 "paragraphs": [
                     {
-                        "qas": [{"question": q, "id": 'q_' + str(i)} for i, q in enumerate(question)],
-                        "context": context
+                        "qas": [
+                            {"question": q, "id": f'q_{str(i)}'}
+                            for i, q in enumerate(question)
+                        ],
+                        "context": context,
                     }
                 ]
             }
@@ -202,12 +204,12 @@ def predict(question, context, model):
     }
 
     try:
-        os.remove(DATA_MODEL_DIR + 'data/dev.json')
-        shutil.rmtree(DATA_MODEL_DIR + 'tfrecords')
+        os.remove(f'{DATA_MODEL_DIR}data/dev.json')
+        shutil.rmtree(f'{DATA_MODEL_DIR}tfrecords')
     except Exception as err:
         print(err)
 
-    with open(DATA_MODEL_DIR + 'data/dev.json', 'w') as f:
+    with open(f'{DATA_MODEL_DIR}data/dev.json', 'w') as f:
         f.writelines(json.dumps(example))
         f.close()
 

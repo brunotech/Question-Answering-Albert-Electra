@@ -47,4 +47,4 @@ def get_task(config: electra.configure_finetuning.FinetuningConfig, task_name,
     elif task_name == "searchqa":
         return qa_tasks.SearchQA(config, tokenizer)
     else:
-        raise ValueError("Unknown task " + task_name)
+        raise ValueError(f"Unknown task {task_name}")

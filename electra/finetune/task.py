@@ -71,4 +71,4 @@ class Task(object):
     pass
 
   def __repr__(self):
-    return "Task(" + self.name + ")"
+    return f"Task({self.name})"
